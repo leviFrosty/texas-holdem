@@ -14,7 +14,7 @@ import {
   Paper,
   Badge,
 } from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
+import { useLocalStorage, useViewportSize } from "@mantine/hooks";
 import Settings from "../components/GameSettings";
 import { showNotification } from "@mantine/notifications";
 import { openConfirmModal, openModal, closeAllModals } from "@mantine/modals";
@@ -68,6 +68,7 @@ export default function Home() {
       bidMultiplier: defaultBidMultiplier,
     },
   });
+  const { height } = useViewportSize();
   const [userSettings, setUserSettings] = useLocalStorage<UserSettings>({
     key: "user-settings",
     defaultValue: {
@@ -324,7 +325,7 @@ export default function Home() {
         <Container>
           <Stack
             justify="space-between"
-            mih="100vh"
+            mih={`${height}px`}
             sx={{ minHeight: "-webkit-fill-available" }}
             pt="md"
             pb="xl"
