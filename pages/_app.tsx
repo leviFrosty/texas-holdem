@@ -5,6 +5,7 @@ import { NotificationsProvider } from "@mantine/notifications";
 import { ModalsProvider } from "@mantine/modals";
 
 export default function App({ Component, pageProps }: AppProps) {
+  // TODO: use device preference for theme as default. Add user preferences menu / add light/dark theme toggler in the hotdog menu
   return (
     <MantineProvider
       withGlobalStyles

@@ -5,10 +5,14 @@ import {
   Divider,
   Text,
   Button,
+  Popover,
+  ActionIcon,
+  Group,
 } from "@mantine/core";
 import {
   defaultBidMultiplier,
   defaultMatchTime,
+  defaultRoundExponent,
   defaultRounds,
   defaultStartingBid,
   GameSettings,
@@ -19,6 +23,7 @@ import {
   IconCirclePlus,
   IconCoins,
   IconVariable,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 
 interface Props {
@@ -116,6 +121,7 @@ export default function Settings({
             withAsterisk
             min={1}
           />
+          <Divider my="xs" />
           <NumberInput
             icon={<IconVariable />}
             value={gameSettings.bidMultiplier}
@@ -131,6 +137,45 @@ export default function Settings({
             description={`The relation of large bid to small bid. This value will by multiplied by the small bid.`}
             withAsterisk
             min={2}
+          />
+          <NumberInput
+            icon={<IconVariable />}
+            value={gameSettings.roundExponent}
+            onChange={(val) =>
+              setGameSettings((prevState) => {
+                return {
+                  ...prevState,
+                  roundExponent: val ?? defaultRoundExponent,
+                };
+              })
+            }
+            label="Round exponentiation"
+            description={
+              <Group sx={{ gap: "0px" }}>
+                <Text>
+                  Exponentiates bid amount each round. Recommended value: 1.
+                </Text>
+                <Popover width={200}>
+                  <Popover.Target>
+                    <ActionIcon color="blue">
+                      <IconInfoCircle size={12} />
+                    </ActionIcon>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <Text>
+                      This setting forces more expensive bids at later rounds.
+                      Increase amount by 0.2+ in addition to increasing the
+                      number of rounds in your game (10+) for a more forced
+                      ending.
+                    </Text>
+                  </Popover.Dropdown>
+                </Popover>
+              </Group>
+            }
+            precision={1}
+            step={0.1}
+            withAsterisk
+            min={1}
           />
           {/* TODO: add round multiplier which will be used to multiply bids across rounds instead of in relation to one another */}
           <Stack sx={{ gap: "0px" }}>

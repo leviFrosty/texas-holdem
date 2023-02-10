@@ -26,7 +26,7 @@ import {
   IconPlayerPlayFilled,
   IconPlayerPauseFilled,
   IconRefresh,
-  IconCurrencyCent,
+  IconPokerChip,
 } from "@tabler/icons-react";
 import useTimer from "../lib/timer";
 import { useEffect } from "react";
@@ -34,6 +34,8 @@ export const defaultMatchTime = 30;
 export const defaultRounds = 3;
 export const defaultStartingBid = 10;
 export const defaultBidMultiplier = 2;
+export const defaultRoundExponent = 1.0;
+export const smallestChipValue = 10;
 
 export interface GameSettings {
   matchTime: number;
@@ -43,6 +45,7 @@ export interface GameSettings {
   startingBid: number;
   bidMultiplier: number;
   hasGameStarted: boolean;
+  roundExponent: number;
 }
 
 export interface UserSettings {
@@ -66,6 +69,7 @@ export default function Home() {
       startingBid: defaultStartingBid,
       hasGameStarted: false,
       bidMultiplier: defaultBidMultiplier,
+      roundExponent: defaultRoundExponent,
     },
   });
   const { height } = useViewportSize();
@@ -119,6 +123,14 @@ export default function Home() {
     endTime: 1,
     percentOfTotalTime: 0,
   };
+
+  const smallBid =
+    Math.ceil(
+      (gameSettings.startingBid ** gameSettings.roundExponent *
+        currentRound.number) /
+        smallestChipValue
+    ) * smallestChipValue;
+  const largeBid = Math.floor(smallBid * gameSettings.bidMultiplier);
 
   const previousRound = () => {
     const previousRoundNumber =
@@ -205,6 +217,7 @@ export default function Home() {
       rounds: defaultRounds,
       startingBid: defaultStartingBid,
       bidMultiplier: defaultBidMultiplier,
+      roundExponent: defaultRoundExponent,
     });
     showNotification({
       title: "Game reset!",
@@ -373,9 +386,9 @@ export default function Home() {
                     <Stack>
                       <Text size="md">Small Bid</Text>
                       <Group sx={{ gap: "4px" }}>
-                        <IconCurrencyCent />
+                        <IconPokerChip />
                         <Text size="xl" fw="bold">
-                          {gameSettings.startingBid * currentRound.number}
+                          {smallBid}
                         </Text>
                       </Group>
                     </Stack>
@@ -389,11 +402,9 @@ export default function Home() {
                         >{`${gameSettings.bidMultiplier}x`}</Badge>
                       </Group>
                       <Group sx={{ gap: "4px" }}>
-                        <IconCurrencyCent />
+                        <IconPokerChip />
                         <Text size="xl" fw="bold">
-                          {gameSettings.startingBid *
-                            currentRound.number *
-                            gameSettings.bidMultiplier}
+                          {largeBid}
                         </Text>
                       </Group>
                     </Stack>
