@@ -1,12 +1,18 @@
-import { Button, Group, NumberInput, Stack, Drawer } from "@mantine/core";
+import { NumberInput, Stack, Drawer, Divider, Text } from "@mantine/core";
 import {
+  defaultBidMultiplier,
   defaultMatchTime,
   defaultRounds,
   defaultStartingBid,
   GameSettings,
   UserSettings,
 } from "../pages";
-import { IconClock, IconCirclePlus, IconCoins } from "@tabler/icons-react";
+import {
+  IconClock,
+  IconCirclePlus,
+  IconCoins,
+  IconVariable,
+} from "@tabler/icons-react";
 
 interface Props {
   gameSettings: GameSettings;
@@ -71,24 +77,44 @@ export default function Settings({
             withAsterisk
             min={1}
           />
-          <Group>
-            <NumberInput
-              icon={<IconCoins />}
-              value={gameSettings.startingBid}
-              onChange={(val) =>
-                setGameSettings((prevState) => {
-                  return {
-                    ...prevState,
-                    startingBid: val ?? defaultStartingBid,
-                  };
-                })
-              }
-              label="Starting Bid"
-              description="Large bid is 2x the small bid."
-              withAsterisk
-              min={1}
-            />
-          </Group>
+          <NumberInput
+            icon={<IconCoins />}
+            value={gameSettings.startingBid}
+            onChange={(val) =>
+              setGameSettings((prevState) => {
+                return {
+                  ...prevState,
+                  startingBid: val ?? defaultStartingBid,
+                };
+              })
+            }
+            label="Starting Bid"
+            description={`Large bid is ${gameSettings.bidMultiplier} the small bid.`}
+            withAsterisk
+            min={1}
+          />
+          <NumberInput
+            icon={<IconVariable />}
+            value={gameSettings.bidMultiplier}
+            onChange={(val) =>
+              setGameSettings((prevState) => {
+                return {
+                  ...prevState,
+                  bidMultiplier: val ?? defaultBidMultiplier,
+                };
+              })
+            }
+            label="Bid Multiplier"
+            description={`Small bid (${gameSettings.startingBid}) will be multiplied by this value at the start of each round.`}
+            withAsterisk
+            min={2}
+          />
+          <Stack sx={{ gap: "0px" }}>
+            <Divider my="xs" />
+            <Text size="xs">
+              Changing game settings will restart your current game.
+            </Text>
+          </Stack>
         </Stack>
       </Drawer>
     </>

@@ -14,7 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
         fontFamily: "Verdana, sans-serif",
       }}
     >
-      <NotificationsProvider position="top-left">
+      <NotificationsProvider limit={2} position="top-left">
         <ModalsProvider>
           <Component {...pageProps} />
         </ModalsProvider>

@@ -12,6 +12,9 @@ import {
   Button,
   ActionIcon,
   RingProgress,
+  Paper,
+  Badge,
+  Indicator,
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import Settings from "../components/GameSettings";
@@ -25,12 +28,14 @@ import {
   IconPlayerPlayFilled,
   IconPlayerPauseFilled,
   IconRefresh,
+  IconCurrencyCent,
 } from "@tabler/icons-react";
 import useTimer from "../lib/timer";
 import { useEffect } from "react";
 export const defaultMatchTime = 0.04;
 export const defaultRounds = 4;
 export const defaultStartingBid = 10;
+export const defaultBidMultiplier = 2;
 
 export interface GameSettings {
   matchTime: number;
@@ -38,6 +43,7 @@ export interface GameSettings {
   startTime?: number;
   rounds: number;
   startingBid: number;
+  bidMultiplier: number;
   hasGameStarted: boolean;
 }
 
@@ -60,6 +66,7 @@ export default function Home() {
       rounds: defaultRounds,
       startingBid: defaultStartingBid,
       hasGameStarted: false,
+      bidMultiplier: defaultBidMultiplier,
     },
   });
   const [userSettings, setUserSettings] = useLocalStorage<UserSettings>({
@@ -133,7 +140,7 @@ export default function Home() {
 
   // Checks for game win condition
   useEffect(() => {
-    if (timeElapsedAsPercent === 1 && gameSettings.hasGameStarted) {
+    if (hasTimerFinished && gameSettings.hasGameStarted) {
       showNotification({
         title: "Game over",
         message: "Total time has elapsed",
@@ -145,7 +152,12 @@ export default function Home() {
         };
       });
     }
-  }, [gameSettings.hasGameStarted, setGameSettings, timeElapsedAsPercent]);
+  }, [
+    gameSettings.hasGameStarted,
+    hasTimerFinished,
+    setGameSettings,
+    timeElapsedAsPercent,
+  ]);
 
   // Handles client-side setting of finishDate on page load
   useEffect(() => {
@@ -159,6 +171,20 @@ export default function Home() {
       };
     });
   }, [setGameSettings]);
+
+  useEffect(() => {
+    if (
+      gameSettings.hasGameStarted &&
+      currentRound.number !== previousRound()?.number
+    ) {
+      showNotification({
+        color: "yellow",
+        title: `Round ${currentRound.number} started`,
+        message: `Bids have been multiplied.`,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRound.number]);
 
   const handleOpenSettingsDrawer = (open: boolean) => {
     setUserSettings((prevState) => {
@@ -177,6 +203,7 @@ export default function Home() {
       matchTime: defaultMatchTime,
       rounds: defaultRounds,
       startingBid: defaultStartingBid,
+      bidMultiplier: defaultBidMultiplier,
     });
     showNotification({
       title: "Game reset!",
@@ -205,6 +232,17 @@ export default function Home() {
       };
     });
   };
+
+  // Listens for settings changes, restarts game after
+  useEffect(() => {
+    restartGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    gameSettings.startingBid,
+    gameSettings.matchTime,
+    gameSettings.rounds,
+    gameSettings.bidMultiplier,
+  ]);
 
   const openConfirmResetModal = () =>
     openConfirmModal({
@@ -273,48 +311,97 @@ export default function Home() {
               <Title order={2}>Tournament Timer</Title>
               <Divider my="md" />
               <Stack mih={"100%"}>
-                <RingProgress
-                  roundCaps
-                  label={
-                    <Text
-                      size="xs"
-                      align="center"
-                      px="xs"
-                      sx={{ pointerEvents: "none" }}
-                    >
-                      {minutes}:{seconds}
-                    </Text>
-                  }
-                  sections={[
-                    {
-                      value: timeElapsedAsPercent
-                        ? timeElapsedAsPercent * 100
-                        : 100,
-                      color: "blue",
-                      tooltip: "Total time elapsed",
-                    },
-                  ]}
-                />
-                <RingProgress
-                  roundCaps
-                  label={
-                    <Text
-                      size="xs"
-                      align="center"
-                      px="xs"
-                      sx={{ pointerEvents: "none" }}
-                    >
-                      {currentRound.number}
-                    </Text>
-                  }
-                  sections={[
-                    {
-                      value: percentCompleteOfCurrentRound,
-                      color: "blue",
-                      tooltip: "Current round timer",
-                    },
-                  ]}
-                />
+                <Group grow>
+                  <Paper withBorder p="sm">
+                    <Stack>
+                      <Text size="md">Small Bid</Text>
+                      <Group sx={{ gap: "4px" }}>
+                        <IconCurrencyCent />
+                        <Text size="xl" fw="bold">
+                          {gameSettings.startingBid * currentRound.number}
+                        </Text>
+                      </Group>
+                    </Stack>
+                  </Paper>
+                  <Paper withBorder p="sm">
+                    <Stack>
+                      <Group spacing="xs">
+                        <Text size="md">Large Bid</Text>
+                        <Badge
+                          sx={{ display: "inline" }}
+                        >{`${gameSettings.bidMultiplier}x`}</Badge>
+                      </Group>
+                      <Group sx={{ gap: "4px" }}>
+                        <IconCurrencyCent />
+                        <Text size="xl" fw="bold">
+                          {gameSettings.startingBid *
+                            currentRound.number *
+                            gameSettings.bidMultiplier}
+                        </Text>
+                      </Group>
+                    </Stack>
+                  </Paper>
+                </Group>
+                <Group grow>
+                  <Paper withBorder p="sm">
+                    <Stack>
+                      <Text size="md">Match Time</Text>
+                      <Group position="center">
+                        <RingProgress
+                          roundCaps
+                          label={
+                            <Text
+                              size="lg"
+                              align="center"
+                              px="xs"
+                              fw="bold"
+                              sx={{ pointerEvents: "none" }}
+                            >
+                              {minutes}:{seconds}
+                            </Text>
+                          }
+                          sections={[
+                            {
+                              value: timeElapsedAsPercent
+                                ? timeElapsedAsPercent * 100
+                                : 100,
+                              color: "blue",
+                              tooltip: "Total time elapsed",
+                            },
+                          ]}
+                        />
+                      </Group>
+                    </Stack>
+                  </Paper>
+                  <Paper withBorder p="sm">
+                    <Stack>
+                      <Text size="md">Round Time</Text>
+                      <Group position="center">
+                        <RingProgress
+                          roundCaps
+                          label={
+                            <Text
+                              size="lg"
+                              align="center"
+                              px="xs"
+                              fw="bold"
+                              sx={{ pointerEvents: "none" }}
+                            >
+                              {currentRound.number}
+                            </Text>
+                          }
+                          sections={[
+                            {
+                              value: percentCompleteOfCurrentRound,
+                              color: "blue",
+                              tooltip: "Current round timer",
+                            },
+                          ]}
+                        />
+                      </Group>
+                    </Stack>
+                  </Paper>
+                </Group>
               </Stack>
             </Box>
             <Box>
