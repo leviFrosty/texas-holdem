@@ -3,7 +3,6 @@ import {
   Stack,
   Title,
   Divider,
-  Flex,
   Container,
   Box,
   Group,
@@ -259,6 +258,23 @@ export default function Home() {
       onConfirm: resetGame,
     });
 
+  const openConfirmRestartModal = () => {
+    pause();
+    openConfirmModal({
+      centered: true,
+      title: "Please confirm your action",
+      children: (
+        <Text size="sm">
+          You will restart the current game, retaining your current settings.
+          Are you sure you want to do this?
+        </Text>
+      ),
+      labels: { confirm: "Confirm", cancel: "Cancel" },
+      confirmProps: { color: "red" },
+      onConfirm: restartGame,
+    });
+  };
+
   return (
     <>
       <Head>
@@ -406,7 +422,14 @@ export default function Home() {
             </Box>
             <Box>
               <Divider my="sm" />
-              <Flex justify="center">
+              <Group position="apart">
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  onClick={() => handleOpenSettingsDrawer(true)}
+                >
+                  <IconSettings />
+                </Button>
                 {hasTimerFinished ? (
                   <Button color="yellow" onClick={restartGame}>
                     <IconRefresh />
@@ -420,7 +443,14 @@ export default function Home() {
                     <IconPlayerPlayFilled />
                   </Button>
                 )}
-              </Flex>
+                <Button
+                  color="gray"
+                  variant="subtle"
+                  onClick={openConfirmRestartModal}
+                >
+                  <IconRefresh />
+                </Button>
+              </Group>
             </Box>
           </Stack>
         </Container>
