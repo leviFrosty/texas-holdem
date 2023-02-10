@@ -38,9 +38,14 @@ export default function Settings({
             value={gameSettings.matchTime}
             onChange={(val) =>
               setGameSettings((prevState) => {
+                const oldDateObj = new Date();
                 return {
                   ...prevState,
                   matchTime: val ?? defaultMatchTime,
+                  finishTime: new Date(
+                    oldDateObj.getTime() +
+                      (val ? val : prevState.matchTime) * 60000
+                  ),
                 };
               })
             }

@@ -9,7 +9,6 @@ import {
   Group,
   Text,
   Menu,
-  Modal,
   Button,
   ActionIcon,
   RingProgress,
@@ -29,13 +28,13 @@ import {
 } from "@tabler/icons-react";
 import useTimer from "../lib/timer";
 import { useEffect } from "react";
-export const defaultMatchTime = 0.05;
-export const defaultRounds = 3;
+export const defaultMatchTime = 0.04;
+export const defaultRounds = 4;
 export const defaultStartingBid = 10;
 
 export interface GameSettings {
   matchTime: number;
-  finishTime: Date;
+  finishTime?: Date;
   startTime?: number;
   rounds: number;
   startingBid: number;
@@ -47,15 +46,17 @@ export interface UserSettings {
 }
 
 export default function Home() {
-  const getDefaultFinishTime = () => {
+  const getFinishTime = ({ asDefault }: { asDefault: boolean }): Date => {
     const oldDateObj = new Date();
-    return new Date(oldDateObj.getTime() + defaultMatchTime * 60000);
+    return new Date(
+      oldDateObj.getTime() +
+        (asDefault ? defaultMatchTime : gameSettings.matchTime) * 60000
+    );
   };
   const [gameSettings, setGameSettings] = useLocalStorage<GameSettings>({
     key: "game-settings",
     defaultValue: {
       matchTime: defaultMatchTime,
-      finishTime: getDefaultFinishTime(),
       rounds: defaultRounds,
       startingBid: defaultStartingBid,
       hasGameStarted: false,
@@ -67,12 +68,72 @@ export default function Home() {
       isChangingSettings: true,
     },
   });
-  const { minutes, seconds, timeLapsedAsPercent, start, pause, isRunning } =
-    useTimer(gameSettings.finishTime, 50);
-  const hasTimerFinished = timeLapsedAsPercent === 1;
+  const {
+    minutes,
+    seconds,
+    timeElapsed,
+    timeElapsedAsPercent,
+    start,
+    pause,
+    isRunning,
+    timeLimit,
+  } = useTimer(gameSettings.finishTime, 25);
+  const hasTimerFinished =
+    timeElapsedAsPercent && Math.ceil(timeElapsedAsPercent * 100) === 100;
+  const timePerRound = timeLimit && Math.floor(timeLimit / gameSettings.rounds);
 
+  const roundsInfo = () => {
+    if (!timeLimit) {
+      return;
+    }
+    const results = [];
+    for (let i = 1; i <= gameSettings.rounds; i++) {
+      const endTime =
+        timePerRound && timeLimit - (timeLimit - timePerRound * i);
+      results.push({
+        number: i,
+        endTime,
+        percentOfTotalTime: endTime && 1 - (timeLimit - endTime) / timeLimit,
+      });
+    }
+    return results;
+  };
+
+  const currentRound = roundsInfo()?.find((round) => {
+    if (round.endTime && timeElapsed) {
+      if (round.endTime > timeElapsed) {
+        return round.number;
+      }
+    }
+  }) ?? {
+    number: 1,
+    startTime: 0,
+    endTime: 1,
+    percentOfTotalTime: 0,
+  };
+
+  const previousRound = () => {
+    const previousRoundNumber =
+      currentRound.number - 1 > 0 ? currentRound.number - 1 : 1;
+    return roundsInfo()?.find((round) => {
+      return round.number === previousRoundNumber;
+    });
+  };
+
+  const previousRoundPercent =
+    currentRound.number !== 1 ? previousRound()?.percentOfTotalTime ?? 0 : 0;
+
+  const percentCompleteOfCurrentRound =
+    (timeElapsedAsPercent &&
+      currentRound.percentOfTotalTime &&
+      ((timeElapsedAsPercent * 100 - previousRoundPercent * 100) /
+        (currentRound.percentOfTotalTime * 100 - previousRoundPercent * 100)) *
+        100) ??
+    0;
+
+  // Checks for game win condition
   useEffect(() => {
-    if (timeLapsedAsPercent === 1 && gameSettings.hasGameStarted) {
+    if (timeElapsedAsPercent === 1 && gameSettings.hasGameStarted) {
       showNotification({
         title: "Game over",
         message: "Total time has elapsed",
@@ -84,7 +145,20 @@ export default function Home() {
         };
       });
     }
-  }, [gameSettings.hasGameStarted, setGameSettings, timeLapsedAsPercent]);
+  }, [gameSettings.hasGameStarted, setGameSettings, timeElapsedAsPercent]);
+
+  // Handles client-side setting of finishDate on page load
+  useEffect(() => {
+    const oldDateObj = new Date();
+    setGameSettings((prevState) => {
+      return {
+        ...prevState,
+        finishTime: new Date(
+          oldDateObj.getTime() + prevState.matchTime * 60000
+        ),
+      };
+    });
+  }, [setGameSettings]);
 
   const handleOpenSettingsDrawer = (open: boolean) => {
     setUserSettings((prevState) => {
@@ -98,7 +172,7 @@ export default function Home() {
   const resetGame = () => {
     setGameSettings({
       hasGameStarted: false,
-      finishTime: getDefaultFinishTime(),
+      finishTime: getFinishTime({ asDefault: true }),
       startTime: undefined,
       matchTime: defaultMatchTime,
       rounds: defaultRounds,
@@ -126,7 +200,7 @@ export default function Home() {
       return {
         ...prevState,
         hasGameStarted: false,
-        finishTime: getDefaultFinishTime(),
+        finishTime: getFinishTime({ asDefault: false }),
         startTime: undefined,
       };
     });
@@ -199,12 +273,6 @@ export default function Home() {
               <Title order={2}>Tournament Timer</Title>
               <Divider my="md" />
               <Stack mih={"100%"}>
-                <Text>Has Game Started {`${gameSettings.hasGameStarted}`}</Text>
-                <Text>Match time {gameSettings.matchTime}</Text>
-                <Text>Rounds {gameSettings.rounds}</Text>
-                <Text>Starting Bid {gameSettings.startingBid}</Text>
-                <Text>Minutes Remaining {minutes}</Text>
-                <Text>Seconds remaining {seconds}</Text>
                 <RingProgress
                   roundCaps
                   label={
@@ -219,12 +287,34 @@ export default function Home() {
                   }
                   sections={[
                     {
-                      value: timeLapsedAsPercent * 100,
+                      value: timeElapsedAsPercent
+                        ? timeElapsedAsPercent * 100
+                        : 100,
                       color: "blue",
                       tooltip: "Total time elapsed",
                     },
                   ]}
-                ></RingProgress>
+                />
+                <RingProgress
+                  roundCaps
+                  label={
+                    <Text
+                      size="xs"
+                      align="center"
+                      px="xs"
+                      sx={{ pointerEvents: "none" }}
+                    >
+                      {currentRound.number}
+                    </Text>
+                  }
+                  sections={[
+                    {
+                      value: percentCompleteOfCurrentRound,
+                      color: "blue",
+                      tooltip: "Current round timer",
+                    },
+                  ]}
+                />
               </Stack>
             </Box>
             <Box>
