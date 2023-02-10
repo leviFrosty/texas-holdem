@@ -13,17 +13,16 @@ import {
   RingProgress,
   Paper,
   Badge,
-  Indicator,
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import Settings from "../components/GameSettings";
 import { showNotification } from "@mantine/notifications";
-import { openConfirmModal } from "@mantine/modals";
+import { openConfirmModal, openModal, closeAllModals } from "@mantine/modals";
 import {
   IconCards,
   IconMenu2,
   IconSettings,
-  IconArrowBack,
+  IconTrash,
   IconPlayerPlayFilled,
   IconPlayerPauseFilled,
   IconRefresh,
@@ -31,8 +30,8 @@ import {
 } from "@tabler/icons-react";
 import useTimer from "../lib/timer";
 import { useEffect } from "react";
-export const defaultMatchTime = 0.04;
-export const defaultRounds = 4;
+export const defaultMatchTime = 30;
+export const defaultRounds = 3;
 export const defaultStartingBid = 10;
 export const defaultBidMultiplier = 2;
 
@@ -48,6 +47,7 @@ export interface GameSettings {
 
 export interface UserSettings {
   isChangingSettings: boolean;
+  hasCompletedTutorial?: boolean;
 }
 
 export default function Home() {
@@ -71,7 +71,8 @@ export default function Home() {
   const [userSettings, setUserSettings] = useLocalStorage<UserSettings>({
     key: "user-settings",
     defaultValue: {
-      isChangingSettings: true,
+      isChangingSettings: false,
+      hasCompletedTutorial: true,
     },
   });
   const {
@@ -185,7 +186,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRound.number]);
 
-  const handleOpenSettingsDrawer = (open: boolean) => {
+  const handleChangeSettingsDrawerState = (open: boolean) => {
     setUserSettings((prevState) => {
       return {
         ...prevState,
@@ -221,6 +222,7 @@ export default function Home() {
     start();
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const restartGame = () => {
     setGameSettings((prevState) => {
       return {
@@ -250,7 +252,7 @@ export default function Home() {
       children: (
         <Text size="sm">
           You will reset all game settings back to defaults and you will lose
-          your time and rounds. Are you sure you want to do this?
+          your time and rounds. Are you sure you want to reset?
         </Text>
       ),
       labels: { confirm: "Confirm", cancel: "Cancel" },
@@ -266,7 +268,7 @@ export default function Home() {
       children: (
         <Text size="sm">
           You will restart the current game, retaining your current settings.
-          Are you sure you want to do this?
+          Are you sure you want to restart?
         </Text>
       ),
       labels: { confirm: "Confirm", cancel: "Cancel" },
@@ -274,6 +276,38 @@ export default function Home() {
       onConfirm: restartGame,
     });
   };
+
+  // Tutorial modal
+  useEffect(() => {
+    const getStarted = ({ closeModal }: { closeModal?: boolean }) => {
+      closeModal && closeAllModals();
+      handleChangeSettingsDrawerState(true);
+    };
+
+    const { hasCompletedTutorial } = JSON.parse(
+      localStorage.getItem("user-settings") ?? "{}"
+    );
+
+    if (!hasCompletedTutorial) {
+      openModal({
+        title: "Let's get started!",
+        onClose: () => getStarted({ closeModal: false }),
+        children: (
+          <Stack>
+            <Text size="sm">
+              To get started configuring your Texas Holdem/Poker tournament,
+              visit the settings.
+            </Text>
+            <Button onClick={() => getStarted({ closeModal: true })}>
+              Take me there
+            </Button>
+          </Stack>
+        ),
+      });
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userSettings.hasCompletedTutorial]);
 
   return (
     <>
@@ -288,7 +322,13 @@ export default function Home() {
       </Head>
       <main>
         <Container>
-          <Stack justify="space-between" mih="100vh" pt="md" pb="xl">
+          <Stack
+            justify="space-between"
+            mih="100vh"
+            sx={{ minHeight: "-webkit-fill-available" }}
+            pt="md"
+            pb="xl"
+          >
             <Group position="apart">
               <Group>
                 <IconCards />
@@ -303,13 +343,13 @@ export default function Home() {
                   <Menu.Label>Application</Menu.Label>
                   <Menu.Item
                     icon={<IconSettings />}
-                    onClick={() => handleOpenSettingsDrawer(true)}
+                    onClick={() => handleChangeSettingsDrawerState(true)}
                   >
                     Settings
                   </Menu.Item>
                   <Menu.Divider />
                   <Menu.Item
-                    icon={<IconArrowBack />}
+                    icon={<IconTrash />}
                     color="red"
                     onClick={openConfirmResetModal}
                   >
@@ -426,7 +466,7 @@ export default function Home() {
                 <Button
                   variant="subtle"
                   color="gray"
-                  onClick={() => handleOpenSettingsDrawer(true)}
+                  onClick={() => handleChangeSettingsDrawerState(true)}
                 >
                   <IconSettings />
                 </Button>
@@ -456,7 +496,8 @@ export default function Home() {
         </Container>
         <Settings
           gameSettings={gameSettings}
-          handleOpenSettingsDrawer={handleOpenSettingsDrawer}
+          handleChangeSettingsDrawerState={handleChangeSettingsDrawerState}
+          setUserSettings={setUserSettings}
           setGameSettings={setGameSettings}
           userSettings={userSettings}
         />

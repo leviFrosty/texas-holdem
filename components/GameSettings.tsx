@@ -1,4 +1,11 @@
-import { NumberInput, Stack, Drawer, Divider, Text } from "@mantine/core";
+import {
+  NumberInput,
+  Stack,
+  Drawer,
+  Divider,
+  Text,
+  Button,
+} from "@mantine/core";
 import {
   defaultBidMultiplier,
   defaultMatchTime,
@@ -20,20 +27,36 @@ interface Props {
   setGameSettings: (
     val: GameSettings | ((prevState: GameSettings) => GameSettings)
   ) => void;
-  handleOpenSettingsDrawer: (val: boolean) => void;
+  setUserSettings: (
+    val: UserSettings | ((prevState: UserSettings) => UserSettings)
+  ) => void;
+  handleChangeSettingsDrawerState: (val: boolean) => void;
 }
 
 export default function Settings({
   gameSettings,
   userSettings,
   setGameSettings,
-  handleOpenSettingsDrawer,
+  handleChangeSettingsDrawerState,
+  setUserSettings,
 }: Props) {
+  const handleSettingsDrawerClose = () => {
+    handleChangeSettingsDrawerState(false);
+    if (!userSettings.hasCompletedTutorial) {
+      setUserSettings((prevState) => {
+        return {
+          ...prevState,
+          hasCompletedTutorial: true,
+        };
+      });
+    }
+  };
+
   return (
     <>
       <Drawer
         opened={userSettings.isChangingSettings}
-        onClose={() => handleOpenSettingsDrawer(false)}
+        onClose={() => handleSettingsDrawerClose()}
         title="Settings"
         padding="xl"
         size="xl"
@@ -89,7 +112,7 @@ export default function Settings({
               })
             }
             label="Starting Bid"
-            description={`Large bid is ${gameSettings.bidMultiplier} the small bid.`}
+            description={`Large bid is ${gameSettings.bidMultiplier}x the small bid.`}
             withAsterisk
             min={1}
           />
@@ -105,16 +128,21 @@ export default function Settings({
               })
             }
             label="Bid Multiplier"
-            description={`Small bid (${gameSettings.startingBid}) will be multiplied by this value at the start of each round.`}
+            description={`The relation of large bid to small bid. This value will by multiplied by the small bid.`}
             withAsterisk
             min={2}
           />
+          {/* TODO: add round multiplier which will be used to multiply bids across rounds instead of in relation to one another */}
           <Stack sx={{ gap: "0px" }}>
             <Divider my="xs" />
             <Text size="xs">
-              Changing game settings will restart your current game.
+              Changing game settings will automatically restart your current
+              game if running.
             </Text>
           </Stack>
+          <Button onClick={() => handleSettingsDrawerClose()}>
+            Close Settings
+          </Button>
         </Stack>
       </Drawer>
     </>
