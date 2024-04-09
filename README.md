@@ -1,6 +1,6 @@
 # Texas Holdem Tournament Timer
 
-[View Live](https://texas-holdem-sigma.vercel.app/)
+[Try Now](https://texas-holdem-sigma.vercel.app/)
 
 ## Features
 
@@ -9,4 +9,3 @@
 - Round exponentiation
 - Start/Top tournament
 - Match Timer
-- Easy to use
