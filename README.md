@@ -5,6 +5,7 @@
 ## Features
 
 - Rounds
+- Visual Progression
 - Bid multiplication
 - Round exponentiation
 - Start/Top tournament
